@@ -7,33 +7,40 @@
     ".": "./src/index.js"
   },
   "main": "./src/index.js",
+  "module": "./src/index.js",
   "files": [
     "src",
     "README.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "keywords": [
     "mel",
+    "mel-spectrogram",
     "spectrogram",
     "fft",
     "audio",
-    "features",
-    "mfcc",
+    "audio-features",
     "stft",
     "filterbank",
     "preprocessing",
     "speech",
+    "speech-recognition",
     "asr",
     "webgpu",
     "wasm",
     "onnx",
+    "onnx-runtime",
     "nemo",
     "machine-learning",
-    "deep-learning"
+    "deep-learning",
+    "web-worker"
   ],
   "author": "Yunus Seyhan Dede",
   "license": "MIT",
