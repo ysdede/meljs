@@ -1,0 +1,51 @@
+{
+  "name": "meljs",
+  "version": "1.0.0",
+  "description": "Pure JavaScript mel spectrogram, FFT, and audio feature extraction for ML/AI applications. NeMo-compatible, zero dependencies, works in browser and Node.js.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "main": "./src/index.js",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "mel",
+    "spectrogram",
+    "fft",
+    "audio",
+    "features",
+    "mfcc",
+    "stft",
+    "filterbank",
+    "preprocessing",
+    "speech",
+    "asr",
+    "webgpu",
+    "wasm",
+    "onnx",
+    "nemo",
+    "machine-learning",
+    "deep-learning"
+  ],
+  "author": "Yunus Seyhan Dede",
+  "license": "MIT",
+  "homepage": "https://github.com/ysdede/meljs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ysdede/meljs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ysdede/meljs/issues"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}
