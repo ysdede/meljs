@@ -41,7 +41,7 @@ const mel = new MelSpectrogram({ nMels: 128 });
 
 // Process audio (Float32Array, mono, 16kHz)
 const { features, length } = mel.process(audioFloat32Array);
-// features: Float32Array [128 × nFrames], normalized
+// features: Float32Array [128 × length], normalized
 // length: number of valid frames
 ```
 
@@ -202,9 +202,9 @@ Validated against NVIDIA NeMo's ONNX preprocessor (`nemo128.onnx`):
 
 ## Performance
 
-### Raw Processing Time
+### Node.js Benchmarks
 
-Benchmarks on a modern desktop (Node.js):
+Benchmarks on a modern desktop (Node.js, V8 JIT fully warmed):
 
 | Duration | Processing Time | Realtime Factor |
 |----------|----------------|-----------------|
@@ -213,7 +213,27 @@ Benchmarks on a modern desktop (Node.js):
 | 5s | ~37ms | ~135x |
 | 10s | ~70ms | ~140x |
 
-### Incremental Caching (the real win)
+### Browser Benchmarks (Chrome, WebGPU-capable desktop)
+
+In-browser performance is slightly slower than Node.js due to V8's browser sandbox and JIT warm-up. First 2-3 calls are ~2x slower; steady-state numbers shown below:
+
+| Audio Duration | Frames | meljs (JS) | nemo128.onnx (WASM+SIMD) |
+|----------------|--------|------------|--------------------------|
+| ~1s | 86–122 | 5–7 ms | 4–5 ms |
+| ~3s | 275–350 | 17–22 ms | 9–15 ms |
+| ~5s | 484–574 | 31–37 ms | 24–35 ms |
+| ~8s | 720–875 | 47–50 ms | 31–44 ms |
+| ~10s | 1028 | 63 ms | 42 ms |
+| ~15s | 1529 | 101 ms | 56 ms |
+| ~21s | 2139 | 144 ms | — |
+
+**Key observation:** In single-file (non-streaming) browser usage, the ONNX preprocessor (`nemo128.onnx`) is **~1.5–2x faster** for the preprocessing step itself — it runs on WASM with SIMD, which is highly optimized for tight numerical loops. However, preprocessing is only 5–15% of total transcription time; **total end-to-end transcription time is virtually identical** between both backends.
+
+### Where meljs wins
+
+The performance advantage of meljs is **not** in raw single-pass speed — it's in **architecture**:
+
+#### 1. Incremental Caching for Streaming (~2x speedup)
 
 In streaming ASR, you typically process overlapping windows (e.g. 5s window every 1s). With a stateless ONNX preprocessor, you recompute the full window every time. meljs caches prefix frames and only computes new audio:
 
@@ -222,16 +242,29 @@ In streaming ASR, you typically process overlapping windows (e.g. 5s window ever
 | Full recompute (or ONNX) | 71.7ms | — |
 | Incremental (70% cached) | 36.6ms | **~2x** |
 
-### Background Worker Pipeline (zero-latency preprocessing)
+#### 2. Background Worker Pipeline (zero-latency preprocessing)
 
-The biggest impact comes from running meljs in a dedicated Web Worker as a continuous mel producer. Because features are pre-computed before inference requests them, the inference thread sees:
+The biggest impact comes from running meljs in a dedicated Web Worker as a continuous mel producer. Audio chunks are processed into mel frames as they arrive from the microphone — before inference even starts. When the encoder needs a feature window, it's already sitting in a buffer:
 
-| Architecture | Preprocessing Latency |
-|-------------|----------------------|
-| ONNX preprocessor (synchronous) | **~180ms** per 5s window |
-| meljs in background worker | **0.0ms** (pre-computed, just a buffer read) |
+| Architecture | Preprocessing Latency in Inference Path |
+|-------------|----------------------------------------|
+| ONNX preprocessor (synchronous) | 30–140 ms (depends on window size) |
+| meljs in background worker | **0.0 ms** (pre-computed, just a buffer read) |
 
-This was measured in production with [boncukjs](https://github.com/ysdede/boncukjs) — a real-time transcription app. The mel worker continuously ingests audio chunks (~0.5ms per 80ms chunk), and when the encoder needs a 5s feature window, it's retrieved from the buffer in ~1-3ms. The inference pipeline reports `Preprocess: 0.0ms`.
+This was measured in production with [boncukjs](https://github.com/ysdede/boncukjs) — a real-time transcription app. The mel worker continuously ingests audio chunks (~0.5ms per 80ms chunk), and when the encoder needs a 5s feature window, it's retrieved from the buffer in ~1-3ms.
+
+#### 3. No Model Download (~5 MB saved)
+
+meljs eliminates the need to download `nemo128.onnx` (~5 MB) from HuggingFace Hub and create an additional ONNX Runtime session, reducing initial load time.
+
+### Summary: When to use which
+
+| Use Case | Recommendation |
+|----------|----------------|
+| Single-file transcription (batch) | Either works; ONNX is slightly faster per-call |
+| Streaming / real-time ASR | **meljs** — caching + background worker = zero-latency preprocessing |
+| Minimize download size | **meljs** — no ONNX preprocessor model needed |
+| Web Worker pipeline | **meljs** — pure JS, no WASM/ONNX constraints |
 
 ## Pipeline Details
 
@@ -271,7 +304,7 @@ meljs is used in production by:
 - [parakeet.js](https://github.com/ysdede/parakeet.js) — Browser-based ASR with WebGPU
 - [boncukjs](https://github.com/ysdede/boncukjs) — Real-time transcription app
 
-It replaces the ONNX preprocessor model (`nemo128.onnx`) in both projects, eliminating a 1.5MB model download and ONNX session overhead.
+It replaces the ONNX preprocessor model (`nemo128.onnx`) in both projects, eliminating a ~5 MB model download and ONNX session overhead.
 
 ## License
 
