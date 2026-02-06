@@ -1,6 +1,6 @@
 {
   "name": "meljs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Pure JavaScript mel spectrogram, FFT, and audio feature extraction for ML/AI applications. NeMo-compatible, zero dependencies, works in browser and Node.js.",
   "type": "module",
   "exports": {
