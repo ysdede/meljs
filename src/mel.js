@@ -290,7 +290,7 @@ export class MelSpectrogram {
    * @param {Float32Array} audio - Mono PCM audio
    * @returns {{rawMel: Float32Array, nFrames: number, featuresLen: number}}
    */
-  computeRawMel(audio) {
+  computeRawMel(audio, startFrame = 0) {
     const N = audio.length;
     if (N === 0) return { rawMel: new Float32Array(0), nFrames: 0, featuresLen: 0 };
 
@@ -317,7 +317,7 @@ export class MelSpectrogram {
     const { _fftRe: fftRe, _fftIm: fftIm, _powerBuf: powerBuf } = this;
     const { hannWindow: window, melFilterbank: fb, nMels, twiddles: tw, nFft, nFreqBins, hopLength, logZeroGuard } = this;
 
-    for (let t = 0; t < nFrames; t++) {
+    for (let t = startFrame; t < nFrames; t++) {
       const offset = t * hopLength;
       for (let k = 0; k < nFft; k++) { fftRe[k] = padded[offset + k] * window[k]; fftIm[k] = 0; }
       fft(fftRe, fftIm, nFft, tw);
@@ -452,7 +452,7 @@ export class IncrementalMelSpectrogram {
     const prefixFrames = Math.floor(prefixSamples / this.processor.hopLength);
     const safeFrames = Math.max(0, Math.min(prefixFrames - this.boundaryFrames, this._cachedFeaturesLen));
 
-    const { rawMel, nFrames, featuresLen } = this.processor.computeRawMel(audio);
+    const { rawMel, nFrames, featuresLen } = this.processor.computeRawMel(audio, safeFrames);
 
     if (safeFrames > 0 && this._cachedRawMel) {
       for (let m = 0; m < this.nMels; m++) {
