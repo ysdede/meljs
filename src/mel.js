@@ -261,6 +261,35 @@ export class MelSpectrogram {
     this.hannWindow = createPaddedHannWindow(this.winLength, this.nFft);
     this.twiddles = precomputeTwiddles(this.nFft);
 
+    // Precompute filterbank bounds to skip zeros (sparse matrix multiplication)
+    this._fbStart = new Int32Array(this.nMels);
+    this._fbEnd = new Int32Array(this.nMels);
+
+    for (let m = 0; m < this.nMels; m++) {
+      const offset = m * this.nFreqBins;
+      let start = 0;
+      let end = 0;
+
+      // Find start (first non-zero)
+      for (let k = 0; k < this.nFreqBins; k++) {
+        if (this.melFilterbank[offset + k] > 0) {
+          start = k;
+          break;
+        }
+      }
+
+      // Find end (last non-zero + 1)
+      for (let k = this.nFreqBins - 1; k >= 0; k--) {
+        if (this.melFilterbank[offset + k] > 0) {
+          end = k + 1;
+          break;
+        }
+      }
+
+      this._fbStart[m] = start;
+      this._fbEnd[m] = end;
+    }
+
     // Pre-allocate reusable buffers
     this._fftRe = new Float64Array(this.nFft);
     this._fftIm = new Float64Array(this.nFft);
@@ -325,7 +354,9 @@ export class MelSpectrogram {
       for (let m = 0; m < nMels; m++) {
         let melVal = 0;
         const fbOff = m * nFreqBins;
-        for (let k = 0; k < nFreqBins; k++) melVal += powerBuf[k] * fb[fbOff + k];
+        const start = this._fbStart[m];
+        const end = this._fbEnd[m];
+        for (let k = start; k < end; k++) melVal += powerBuf[k] * fb[fbOff + k];
         rawMel[m * nFrames + t] = Math.log(melVal + logZeroGuard);
       }
     }
