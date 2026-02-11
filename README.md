@@ -251,7 +251,7 @@ The biggest impact comes from running meljs in a dedicated Web Worker as a conti
 | ONNX preprocessor (synchronous) | 30–140 ms (depends on window size) |
 | meljs in background worker | **0.0 ms** (pre-computed, just a buffer read) |
 
-This was measured in production with [boncukjs](https://github.com/ysdede/boncukjs), a real-time transcription app. The mel worker continuously ingests audio chunks (~0.5ms per 80ms chunk), and when the encoder needs a 5s feature window, it's retrieved from the buffer in ~1-3ms.
+This was measured in production with [keet](https://github.com/ysdede/keet), a real-time transcription app. The mel worker continuously ingests audio chunks (~0.5ms per 80ms chunk), and when the encoder needs a 5s feature window, it's retrieved from the buffer in ~1-3ms.
 
 #### 3. No Model Download (~5 MB saved)
 
@@ -302,7 +302,7 @@ The test suite includes:
 
 meljs is used in production by:
 - [parakeet.js](https://github.com/ysdede/parakeet.js), Browser-based ASR with WebGPU
-- [boncukjs](https://github.com/ysdede/boncukjs), Real-time transcription app
+- [keet](https://github.com/ysdede/keet), Real-time transcription app
 
 It replaces the ONNX preprocessor model (`nemo128.onnx`) in both projects, eliminating a ~5 MB model download and ONNX session overhead.
 
