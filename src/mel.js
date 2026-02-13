@@ -261,6 +261,35 @@ export class MelSpectrogram {
     this.hannWindow = createPaddedHannWindow(this.winLength, this.nFft);
     this.twiddles = precomputeTwiddles(this.nFft);
 
+    // Precompute filterbank sparsity bounds
+    // The filterbank is ~98% sparse. We precompute the start/end indices
+    // for each mel bin to avoid iterating over zeros.
+    this._fbStart = new Int32Array(this.nMels);
+    this._fbEnd = new Int32Array(this.nMels);
+    for (let m = 0; m < this.nMels; m++) {
+      let start = 0;
+      let end = this.nFreqBins;
+      const fbOff = m * this.nFreqBins;
+
+      // Find first non-zero
+      for (let k = 0; k < this.nFreqBins; k++) {
+        if (this.melFilterbank[fbOff + k] > 0) {
+          start = k;
+          break;
+        }
+      }
+
+      // Find last non-zero
+      for (let k = this.nFreqBins - 1; k >= 0; k--) {
+        if (this.melFilterbank[fbOff + k] > 0) {
+          end = k + 1;
+          break;
+        }
+      }
+      this._fbStart[m] = start;
+      this._fbEnd[m] = end;
+    }
+
     // Pre-allocate reusable buffers
     this._fftRe = new Float64Array(this.nFft);
     this._fftIm = new Float64Array(this.nFft);
@@ -314,7 +343,7 @@ export class MelSpectrogram {
 
     // 4. STFT + Power + Mel + Log
     const rawMel = new Float32Array(this.nMels * nFrames);
-    const { _fftRe: fftRe, _fftIm: fftIm, _powerBuf: powerBuf } = this;
+    const { _fftRe: fftRe, _fftIm: fftIm, _powerBuf: powerBuf, _fbStart: fbStart, _fbEnd: fbEnd } = this;
     const { hannWindow: window, melFilterbank: fb, nMels, twiddles: tw, nFft, nFreqBins, hopLength, logZeroGuard } = this;
 
     for (let t = 0; t < nFrames; t++) {
@@ -325,7 +354,10 @@ export class MelSpectrogram {
       for (let m = 0; m < nMels; m++) {
         let melVal = 0;
         const fbOff = m * nFreqBins;
-        for (let k = 0; k < nFreqBins; k++) melVal += powerBuf[k] * fb[fbOff + k];
+        // Optimization: only iterate over non-zero filterbank values
+        const start = fbStart[m];
+        const end = fbEnd[m];
+        for (let k = start; k < end; k++) melVal += powerBuf[k] * fb[fbOff + k];
         rawMel[m * nFrames + t] = Math.log(melVal + logZeroGuard);
       }
     }
