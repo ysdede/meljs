@@ -265,6 +265,20 @@ export class MelSpectrogram {
     this._fftRe = new Float64Array(this.nFft);
     this._fftIm = new Float64Array(this.nFft);
     this._powerBuf = new Float32Array(this.nFreqBins);
+
+    // Precompute filterbank sparsity (start/end indices of non-zero elements)
+    this._fbStart = new Int32Array(this.nMels);
+    this._fbEnd = new Int32Array(this.nMels);
+    for (let m = 0; m < this.nMels; m++) {
+      const offset = m * this.nFreqBins;
+      let start = 0;
+      while (start < this.nFreqBins && this.melFilterbank[offset + start] === 0) start++;
+      this._fbStart[m] = start;
+
+      let end = this.nFreqBins;
+      while (end > start && this.melFilterbank[offset + end - 1] === 0) end--;
+      this._fbEnd[m] = end;
+    }
   }
 
   /**
@@ -325,7 +339,9 @@ export class MelSpectrogram {
       for (let m = 0; m < nMels; m++) {
         let melVal = 0;
         const fbOff = m * nFreqBins;
-        for (let k = 0; k < nFreqBins; k++) melVal += powerBuf[k] * fb[fbOff + k];
+        const start = this._fbStart[m];
+        const end = this._fbEnd[m];
+        for (let k = start; k < end; k++) melVal += powerBuf[k] * fb[fbOff + k];
         rawMel[m * nFrames + t] = Math.log(melVal + logZeroGuard);
       }
     }
