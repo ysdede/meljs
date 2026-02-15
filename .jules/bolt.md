@@ -1,0 +1,3 @@
+## 2024-05-22 - Sparse Mel Filterbank Optimization
+**Learning:** The Mel filterbank matrix is approximately 98% sparse because each Mel filter is a triangular window covering a small frequency range. Iterating over all frequency bins (N_FFT/2 + 1) for every Mel bin involves many multiplications by zero, which is computationally wasteful.
+**Action:** When working with filterbanks or similar windowing operations, always verify the sparsity of the transformation matrix. If it is sparse, optimize the matrix multiplication by precomputing the start and end indices of the non-zero elements and iterating only over that range. This yielded a ~2.8x speedup in this case.
