@@ -261,6 +261,23 @@ export class MelSpectrogram {
     this.hannWindow = createPaddedHannWindow(this.winLength, this.nFft);
     this.twiddles = precomputeTwiddles(this.nFft);
 
+    // Precompute sparse filterbank indices to avoid multiplying by zero
+    this._fbStart = new Int32Array(this.nMels);
+    this._fbEnd = new Int32Array(this.nMels);
+    for (let m = 0; m < this.nMels; m++) {
+      let start = -1;
+      let end = -1;
+      const offset = m * this.nFreqBins;
+      for (let k = 0; k < this.nFreqBins; k++) {
+        if (this.melFilterbank[offset + k] > 0) {
+          if (start === -1) start = k;
+          end = k + 1;
+        }
+      }
+      this._fbStart[m] = start === -1 ? 0 : start;
+      this._fbEnd[m] = end === -1 ? 0 : end;
+    }
+
     // Pre-allocate reusable buffers
     this._fftRe = new Float64Array(this.nFft);
     this._fftIm = new Float64Array(this.nFft);
@@ -315,7 +332,7 @@ export class MelSpectrogram {
     // 4. STFT + Power + Mel + Log
     const rawMel = new Float32Array(this.nMels * nFrames);
     const { _fftRe: fftRe, _fftIm: fftIm, _powerBuf: powerBuf } = this;
-    const { hannWindow: window, melFilterbank: fb, nMels, twiddles: tw, nFft, nFreqBins, hopLength, logZeroGuard } = this;
+    const { hannWindow: window, melFilterbank: fb, nMels, twiddles: tw, nFft, nFreqBins, hopLength, logZeroGuard, _fbStart: fbStart, _fbEnd: fbEnd } = this;
 
     for (let t = 0; t < nFrames; t++) {
       const offset = t * hopLength;
@@ -325,7 +342,9 @@ export class MelSpectrogram {
       for (let m = 0; m < nMels; m++) {
         let melVal = 0;
         const fbOff = m * nFreqBins;
-        for (let k = 0; k < nFreqBins; k++) melVal += powerBuf[k] * fb[fbOff + k];
+        const start = fbStart[m];
+        const end = fbEnd[m];
+        for (let k = start; k < end; k++) melVal += powerBuf[k] * fb[fbOff + k];
         rawMel[m * nFrames + t] = Math.log(melVal + logZeroGuard);
       }
     }
