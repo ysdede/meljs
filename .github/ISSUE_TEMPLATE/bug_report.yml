@@ -1,0 +1,100 @@
+name: Bug Report
+description: Report a reproducible bug in meljs
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the bug in one or two sentences.
+      placeholder: What broke, and when?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where are you running meljs?
+      options:
+        - Node.js
+        - Browser (Chrome)
+        - Browser (Firefox)
+        - Browser (Edge)
+        - Browser (Safari)
+        - Web Worker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: node_or_browser_version
+    attributes:
+      label: Runtime Version
+      placeholder: Node.js 20.11, Chrome 133, Edge 132...
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api_used
+    attributes:
+      label: API Used
+      description: Which meljs API are you using?
+      options:
+        - MelSpectrogram
+        - IncrementalMelSpectrogram
+        - createParakeetMelProcessor
+        - ParakeetIncrementalMelProcessor
+        - Low-level functions (FFT, filterbank, etc.)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: meljs_version
+    attributes:
+      label: meljs Version
+      placeholder: "1.0.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: Include exact steps and a minimal code snippet.
+      placeholder: |
+        1) Create processor with ...
+        2) Call process() with ...
+        3) Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs Actual
+      placeholder: |
+        Expected:
+        Actual:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error Output
+      description: Paste console logs, error messages, or benchmark output.
+      render: text
+    validations:
+      required: false

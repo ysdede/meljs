@@ -1,12 +1,14 @@
 # meljs
 
+![Benchmark](https://github.com/ysdede/meljs/actions/workflows/benchmark.yml/badge.svg)
+
 **Pure JavaScript mel spectrogram, FFT, and audio feature extraction for ML/AI.**
 
 Zero dependencies. Runs in browsers (including Web Workers, WebGPU pipelines) and Node.js. NeMo-compatible output validated against ONNX reference models.
 
 > Built for developers working with speech recognition, audio ML, and ONNX Runtime Web who need stateful, cacheable audio feature extraction, something ONNX preprocessor models can't provide.
 
-📊 **[Live Benchmark Dashboard](https://ysdede.github.io/meljs/)** · ![Benchmark](https://github.com/ysdede/meljs/actions/workflows/benchmark.yml/badge.svg)
+**[Live Benchmark Dashboard](https://ysdede.github.io/meljs/)**
 
 ## Why meljs?
 
