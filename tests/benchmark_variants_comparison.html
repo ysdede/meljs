@@ -3,184 +3,644 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>meljs Variant Comparison</title>
+  <title>meljs Benchmark Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
+    /* ── Design Tokens ── */
     :root {
-      --bg: #f7f7f8;
-      --panel: #ffffff;
-      --ink: #1f2937;
-      --muted: #6b7280;
-      --line: #e5e7eb;
+      --bg-base: #0f1117;
+      --bg-surface: #161822;
+      --bg-card: #1c1f2e;
+      --bg-card-hover: #232740;
+      --bg-input: #12141e;
+      --border: #2a2d3e;
+      --border-active: #06b6d4;
+      --text-primary: #e8eaed;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #06b6d4;
+      --accent-dim: rgba(6, 182, 212, 0.15);
+      --green: #10b981;
+      --green-dim: rgba(16, 185, 129, 0.15);
+      --orange: #f59e0b;
+      --orange-dim: rgba(245, 158, 11, 0.15);
+      --purple: #8b5cf6;
+      --purple-dim: rgba(139, 92, 246, 0.15);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.15);
+      --radius: 8px;
+      --sidebar-w: 280px;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      background:
-        radial-gradient(circle at 12% 0%, #e6fffb 0%, rgba(230, 255, 251, 0) 30%),
-        radial-gradient(circle at 100% 0%, #eef2ff 0%, rgba(238, 242, 255, 0) 25%),
-        var(--bg);
-      color: var(--ink);
-      font-family: "Segoe UI", "Avenir Next", "Trebuchet MS", sans-serif;
-    }
-    .wrap {
-      max-width: 1220px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-    .hero {
-      background: linear-gradient(130deg, #0f766e 0%, #1d4ed8 100%);
-      color: #fff;
-      border-radius: 14px;
-      padding: 18px 20px;
-      margin-bottom: 12px;
-      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
-    }
-    .hero h1 { margin: 0 0 6px; font-size: 24px; }
-    .hero p { margin: 0; opacity: 0.9; }
-    .panel {
-      background: var(--panel);
-      border: 1px solid rgba(31, 41, 55, 0.08);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
-    }
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-      gap: 8px;
-      align-items: end;
-    }
-    .field { display: flex; flex-direction: column; gap: 4px; }
-    .field label { font-size: 12px; color: var(--muted); font-weight: 600; }
-    input, button {
-      height: 34px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      padding: 0 10px;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
       font-size: 13px;
-      background: #fff;
-      color: var(--ink);
+      line-height: 1.5;
+      overflow-x: hidden;
     }
-    button {
-      border: 0;
-      color: #fff;
-      background: #0f766e;
+
+    /* ── Layout ── */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .main {
+      flex: 1;
+      min-width: 0;
+      padding: 20px 24px 40px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.01em;
+    }
+    .sidebar-header .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .sidebar-section {
+      padding: 12px 16px 8px;
+    }
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .file-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .file-item {
+      padding: 8px 10px;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .file-item:hover { background: var(--bg-card-hover); }
+    .file-item.active {
+      background: var(--accent-dim);
+      border-color: var(--border-active);
+    }
+    .file-item .file-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-item .file-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .file-item.active .file-name { color: var(--accent); }
+    .sidebar-actions {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .btn {
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--text-muted); }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
       font-weight: 600;
     }
-    button.secondary { background: #1d4ed8; }
-    button.ghost { background: #fff; color: var(--ink); border: 1px solid #d1d5db; }
-    .meta { margin-top: 8px; color: var(--muted); font-size: 13px; }
-    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 6px 0 8px; font-size: 13px; }
-    .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-right: 6px; }
-    canvas { width: 100%; height: 290px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid #eceff1; padding: 7px 6px; text-align: right; white-space: nowrap; }
+    .btn-primary:hover { background: #22d3ee; border-color: #22d3ee; }
+    .btn-sm { height: 28px; font-size: 11px; padding: 0 10px; }
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px dashed var(--border);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .file-upload-label:hover { border-color: var(--accent); color: var(--accent); }
+    .file-upload-label input { display: none; }
+
+    /* ── Top Bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .topbar h2 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .topbar .meta-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+    .kpi-card.teal::before { background: var(--accent); }
+    .kpi-card.green::before { background: var(--green); }
+    .kpi-card.orange::before { background: var(--orange); }
+    .kpi-card.purple::before { background: var(--purple); }
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.02em;
+    }
+    .kpi-card.teal .kpi-value { color: var(--accent); }
+    .kpi-card.green .kpi-value { color: var(--green); }
+    .kpi-card.orange .kpi-value { color: var(--orange); }
+    .kpi-card.purple .kpi-value { color: var(--purple); }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Controls Bar ── */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .control-input {
+      height: 28px;
+      width: 70px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 0 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .control-input:focus { border-color: var(--accent); }
+    .btn-group {
+      display: flex;
+      gap: 4px;
+    }
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    /* ── Chart Grid ── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .chart-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px 10px;
+    }
+    .chart-panel h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chart-panel h3 .badge {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .chart-panel canvas { width: 100% !important; }
+
+    /* ── Tables ── */
+    .table-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-header h3 {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .table-toggle {
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .table-toggle:hover { text-decoration: underline; }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: right;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      position: sticky;
+      top: 0;
+    }
     th:first-child, td:first-child { text-align: left; }
-    th { color: #374151; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
-    .best { font-weight: 700; color: #065f46; }
-    @media (max-width: 980px) {
-      .controls { grid-template-columns: 1fr 1fr; }
-      canvas { height: 250px; }
+    tr:hover td { background: rgba(255,255,255, 0.02); }
+    .best-cell { color: var(--green); font-weight: 700; }
+    .rank-1 { color: var(--green); }
+    .rank-2 { color: var(--accent); }
+    .rank-3 { color: var(--orange); }
+
+    /* ── Heatmap Table ── */
+    .heatmap-cell {
+      font-weight: 600;
+      font-size: 11px;
+      text-align: center;
+      min-width: 60px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 860px) {
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ── Transitions ── */
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 13px; max-width: 320px; margin: 0 auto; }
+
+    /* ── Variant Legend ── */
+    .variant-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <h1>meljs Variant Benchmark Charts</h1>
-      <p>Duration vs p50 latency, RTFx, and speedup. Use 7–14s preset for streaming-focused selection.</p>
-    </section>
+  <div class="app">
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>⚡ meljs Bench</h1>
+        <div class="subtitle">Variant Benchmark Dashboard</div>
+      </div>
 
-    <section class="panel">
-      <div class="controls">
-        <div class="field" style="grid-column: span 2;">
-          <label for="minSec">Min Sec</label>
-          <input id="minSec" type="number" step="0.1" value="0" />
-        </div>
-        <div class="field" style="grid-column: span 2;">
-          <label for="maxSec">Max Sec</label>
-          <input id="maxSec" type="number" step="0.1" value="200" />
-        </div>
-        <div class="field" style="grid-column: span 2;">
-          <button id="btn714" class="secondary">Set 7–14s</button>
-        </div>
-        <div class="field" style="grid-column: span 2;">
-          <button id="btnReset" class="ghost">Reset Range</button>
-        </div>
-        <div class="field" style="grid-column: span 2;">
-          <button id="btnLoadLatest">Load Tracked JSONs</button>
-        </div>
-        <div class="field" style="grid-column: span 4;">
-          <label for="files">Load JSON File(s)</label>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Data Files</div>
+        <ul id="fileList" class="file-list">
+          <li class="file-item" style="color: var(--text-muted); font-size: 11px; cursor: default;">
+            Click "Load Manifest" to discover files
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-actions">
+        <button id="btnLoadManifest" class="btn btn-primary">⟳ Load Manifest</button>
+        <label class="file-upload-label">
+          📁 Upload JSON files
           <input id="files" type="file" accept=".json,application/json" multiple />
+        </label>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <div class="main">
+      <div class="topbar">
+        <h2>Benchmark Dashboard</h2>
+        <div id="metaText" class="meta-text">No data loaded</div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div id="kpiRow" class="kpi-row fade-in">
+        <div class="kpi-card teal">
+          <div class="kpi-label">Best Variant</div>
+          <div id="kpiBestVariant" class="kpi-value">—</div>
+          <div id="kpiBestSub" class="kpi-sub">Load data to see results</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Geo Mean Speedup</div>
+          <div id="kpiSpeedup" class="kpi-value">—</div>
+          <div id="kpiSpeedupSub" class="kpi-sub">vs current baseline</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-label">Median RTFx</div>
+          <div id="kpiRtfx" class="kpi-value">—</div>
+          <div id="kpiRtfxSub" class="kpi-sub">real-time factor</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Data Points</div>
+          <div id="kpiPoints" class="kpi-value">—</div>
+          <div id="kpiPointsSub" class="kpi-sub">duration × variant records</div>
         </div>
       </div>
-      <div id="meta" class="meta"></div>
-    </section>
 
-    <section class="panel">
-      <div id="legend1" class="legend"></div>
-      <canvas id="c1" width="1200" height="290"></canvas>
-    </section>
+      <!-- Controls -->
+      <div class="controls-bar">
+        <div class="control-group">
+          <label for="minSec">Min (s)</label>
+          <input id="minSec" class="control-input" type="number" step="0.1" value="0" />
+        </div>
+        <div class="control-group">
+          <label for="maxSec">Max (s)</label>
+          <input id="maxSec" class="control-input" type="number" step="0.1" value="200" />
+        </div>
+        <div class="divider"></div>
+        <div class="btn-group">
+          <button id="btn714" class="btn btn-sm">7–14s</button>
+          <button id="btnAll" class="btn btn-sm">All</button>
+        </div>
+        <div class="divider"></div>
+        <div id="variantLegend" class="variant-legend"></div>
+      </div>
 
-    <section class="panel">
-      <div id="legend2" class="legend"></div>
-      <canvas id="c2" width="1200" height="290"></canvas>
-    </section>
+      <!-- Charts -->
+      <div class="chart-grid" id="chartGrid">
+        <div class="chart-panel">
+          <h3>p50 Latency vs Duration <span class="badge">median</span></h3>
+          <canvas id="chartP50"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3>RTFx vs Duration <span class="badge">real-time factor</span></h3>
+          <canvas id="chartRTFx"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3>Speedup vs Current <span class="badge">baseline=1x</span></h3>
+          <canvas id="chartSpeed"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3>p90 Latency vs Duration <span class="badge">tail</span></h3>
+          <canvas id="chartP90"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3>Variant Comparison <span class="badge">avg p50</span></h3>
+          <canvas id="chartBar"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3>Latency Distribution <span class="badge">std dev</span></h3>
+          <canvas id="chartStd"></canvas>
+        </div>
+      </div>
 
-    <section class="panel">
-      <div id="legend3" class="legend"></div>
-      <canvas id="c3" width="1200" height="290"></canvas>
-    </section>
+      <!-- Heatmap Table -->
+      <div class="table-panel fade-in">
+        <div class="table-header">
+          <h3>Latency Heatmap — p50 (ms)</h3>
+        </div>
+        <div class="table-wrap">
+          <table id="heatmapTable"></table>
+        </div>
+      </div>
 
-    <section class="panel">
-      <h3 style="margin: 0 0 8px;">Range Summary</h3>
-      <table id="summary"></table>
-    </section>
+      <!-- Summary Table -->
+      <div class="table-panel fade-in">
+        <div class="table-header">
+          <h3>Range Summary</h3>
+        </div>
+        <div class="table-wrap">
+          <table id="summary"></table>
+        </div>
+      </div>
 
-    <section class="panel">
-      <h3 style="margin: 0 0 8px;">Per Duration</h3>
-      <table id="detail"></table>
-    </section>
+      <!-- Detail Table -->
+      <div class="table-panel fade-in">
+        <div class="table-header">
+          <h3>Per Duration Detail</h3>
+          <button id="toggleDetail" class="table-toggle">▼ Show</button>
+        </div>
+        <div id="detailWrap" class="table-wrap" style="display: none;">
+          <table id="detail"></table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const DEFAULT_LATEST_PATH = "../tmp/meljs-variant-benchmark-latest.json";
+    /* ══════════════════════════════════════════════════════════════
+       STATE & CONSTANTS
+       ══════════════════════════════════════════════════════════════ */
     const DEFAULT_MANIFEST_PATH = "../tmp/meljs-variant-benchmark-manifest.json";
-    const COLORS = ["#0f766e", "#be123c", "#1d4ed8", "#7c3aed", "#ea580c", "#2563eb"];
+    const VARIANT_COLORS = {
+      current: "#ef4444",
+      pr74:    "#06b6d4",
+      pr75:    "#10b981",
+      pr84:    "#f59e0b",
+      pr85:    "#8b5cf6",
+      pr86:    "#ec4899",
+    };
+    const FALLBACK_COLORS = ["#06b6d4","#10b981","#f59e0b","#8b5cf6","#ec4899","#ef4444","#3b82f6","#14b8a6"];
 
     const state = {
       reports: [],
+      manifestEntries: [],
+      activeFileIndices: new Set(),
       aggregate: new Map(),
       variants: [],
       durations: [],
       colors: new Map(),
+      charts: {},
     };
 
+    /* ══════════════════════════════════════════════════════════════
+       UTILITY
+       ══════════════════════════════════════════════════════════════ */
     function median(a) {
       if (!a.length) return null;
       const s = [...a].sort((x, y) => x - y);
       const m = Math.floor(s.length / 2);
       return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
     }
-
-    function avg(a) {
-      if (!a.length) return null;
-      return a.reduce((x, y) => x + y, 0) / a.length;
-    }
-
+    function avg(a) { return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; }
     function gmean(a) {
-      const v = a.filter((x) => x > 0);
-      if (!v.length) return null;
-      return Math.exp(v.reduce((x, y) => x + Math.log(y), 0) / v.length);
+      const v = a.filter(x => x > 0);
+      return v.length ? Math.exp(v.reduce((x, y) => x + Math.log(y), 0) / v.length) : null;
+    }
+    function stddev(a) {
+      if (a.length < 2) return 0;
+      const m = avg(a);
+      return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1));
+    }
+    function fms(v) { return v == null ? "—" : v.toFixed(2); }
+    function fx(v) { return v == null ? "—" : v.toFixed(2) + "×"; }
+    function fsec(v) { return Number(v).toFixed(1).replace(/\.0$/, ""); }
+
+    function colorFor(variant) {
+      if (state.colors.has(variant)) return state.colors.get(variant);
+      const c = VARIANT_COLORS[variant] || FALLBACK_COLORS[state.colors.size % FALLBACK_COLORS.length];
+      state.colors.set(variant, c);
+      return c;
     }
 
-    function fms(v) { return v == null ? "-" : v.toFixed(3); }
-    function fx(v) { return v == null ? "-" : v.toFixed(3) + "x"; }
-    function fsec(v) { return Number(v).toFixed(3).replace(/\.000$/, ""); }
-
+    /* ══════════════════════════════════════════════════════════════
+       DATA NORMALIZATION
+       ══════════════════════════════════════════════════════════════ */
     function normalize(reports) {
       const aggregate = new Map();
       const variantSet = new Set();
@@ -197,147 +657,325 @@
           for (const [variant, vrec] of Object.entries(row.variants || {})) {
             variantSet.add(variant);
             if (!bucket.has(variant)) {
-              bucket.set(variant, { p50: [], p90: [], rtfx: [], speed: [] });
+              bucket.set(variant, { p50: [], p90: [], rtfx: [], speed: [], std: [], allMs: [] });
             }
             const slot = bucket.get(variant);
             const p50 = Number(vrec?.timing?.p50Ms);
             const p90 = Number(vrec?.timing?.p90Ms);
             const speed = Number(vrec?.timing?.speedupVsCurrentP50);
+            const sd = Number(vrec?.timing?.stdMs);
             if (Number.isFinite(p50) && p50 > 0) {
               slot.p50.push(p50);
               slot.rtfx.push(d / (p50 / 1000));
             }
             if (Number.isFinite(p90) && p90 > 0) slot.p90.push(p90);
             if (Number.isFinite(speed) && speed > 0) slot.speed.push(speed);
+            if (Number.isFinite(sd)) slot.std.push(sd);
+            if (Array.isArray(vrec?.timing?.allMs)) slot.allMs.push(...vrec.timing.allMs);
           }
         }
       }
 
       state.aggregate = aggregate;
-      state.variants = [...variantSet].sort();
-      state.durations = [...durationSet].sort((a, b) => a - b);
-      state.variants.forEach((v, i) => {
-        if (!state.colors.has(v)) state.colors.set(v, COLORS[i % COLORS.length]);
+      state.variants = [...variantSet].sort((a, b) => {
+        if (a === "current") return -1;
+        if (b === "current") return 1;
+        return a.localeCompare(b);
       });
+      state.durations = [...durationSet].sort((a, b) => a - b);
+      state.variants.forEach(v => colorFor(v));
     }
 
+    /* ══════════════════════════════════════════════════════════════
+       FILTERS
+       ══════════════════════════════════════════════════════════════ */
     function filteredDurations() {
       const min = Number(document.getElementById("minSec").value);
       const max = Number(document.getElementById("maxSec").value);
-      return state.durations.filter((d) => d >= (Number.isFinite(min) ? min : 0) && d <= (Number.isFinite(max) ? max : Number.POSITIVE_INFINITY));
+      return state.durations.filter(d =>
+        d >= (Number.isFinite(min) ? min : 0) &&
+        d <= (Number.isFinite(max) ? max : Infinity)
+      );
     }
 
-    function series(metric, durations) {
-      return state.variants.map((v) => ({
+    function seriesFor(metric, durations) {
+      return state.variants.map(v => ({
         name: v,
-        color: state.colors.get(v),
-        values: durations.map((d) => {
+        color: colorFor(v),
+        values: durations.map(d => {
           const slot = state.aggregate.get(d)?.get(v);
           if (!slot) return null;
           if (metric === "p50") return median(slot.p50);
+          if (metric === "p90") return median(slot.p90);
           if (metric === "rtfx") return median(slot.rtfx);
           if (metric === "speed") return median(slot.speed);
+          if (metric === "std") return median(slot.std);
           return null;
         })
       }));
     }
 
-    function drawChart(canvasId, title, ylabel, durations, sers, yfmt) {
-      const c = document.getElementById(canvasId);
-      const ctx = c.getContext("2d");
-      const W = c.width, H = c.height;
-      const m = { top: 30, right: 16, bottom: 38, left: 68 };
-      const pw = W - m.left - m.right;
-      const ph = H - m.top - m.bottom;
-
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, W, H);
-
-      const values = sers.flatMap((s) => s.values.filter((v) => Number.isFinite(v)));
-      if (!durations.length || !values.length) {
-        ctx.fillStyle = "#6b7280";
-        ctx.font = "14px Segoe UI";
-        ctx.fillText("No data in selected range", m.left, m.top + 20);
-        return;
+    /* ══════════════════════════════════════════════════════════════
+       CHART.JS HELPERS
+       ══════════════════════════════════════════════════════════════ */
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#1c1f2e",
+          titleColor: "#e8eaed",
+          bodyColor: "#9ca3af",
+          borderColor: "#2a2d3e",
+          borderWidth: 1,
+          padding: 10,
+          bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+          titleFont: { family: "'Inter', sans-serif", size: 12, weight: 600 },
+          callbacks: {}
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255,255,255,0.04)" },
+          ticks: { color: "#6b7280", font: { family: "'JetBrains Mono'", size: 10 } },
+          title: { display: true, text: "Duration (s)", color: "#6b7280", font: { size: 11 } }
+        },
+        y: {
+          grid: { color: "rgba(255,255,255,0.04)" },
+          ticks: { color: "#6b7280", font: { family: "'JetBrains Mono'", size: 10 } },
+          beginAtZero: false
+        }
       }
+    };
 
-      let ymin = Math.min(...values);
-      let ymax = Math.max(...values);
-      if (ymin === ymax) {
-        ymin *= 0.9;
-        ymax *= 1.1;
-      } else {
-        const pad = (ymax - ymin) * 0.12;
-        ymin = Math.max(0, ymin - pad);
-        ymax += pad;
-      }
-
-      const xOf = (i) => m.left + (i / Math.max(1, durations.length - 1)) * pw;
-      const yOf = (v) => m.top + ((ymax - v) / (ymax - ymin)) * ph;
-
-      ctx.strokeStyle = "#e5e7eb";
-      for (let i = 0; i <= 5; i++) {
-        const y = m.top + (i / 5) * ph;
-        ctx.beginPath(); ctx.moveTo(m.left, y); ctx.lineTo(m.left + pw, y); ctx.stroke();
-      }
-
-      ctx.strokeStyle = "#374151";
-      ctx.beginPath();
-      ctx.moveTo(m.left, m.top);
-      ctx.lineTo(m.left, m.top + ph);
-      ctx.lineTo(m.left + pw, m.top + ph);
-      ctx.stroke();
-
-      ctx.fillStyle = "#111827";
-      ctx.font = "600 14px Segoe UI";
-      ctx.fillText(title, m.left, 20);
-      ctx.fillStyle = "#374151";
-      ctx.font = "12px Segoe UI";
-      ctx.fillText(ylabel, 10, m.top - 8);
-
-      for (let i = 0; i <= 5; i++) {
-        const val = ymax - (i / 5) * (ymax - ymin);
-        const y = m.top + (i / 5) * ph;
-        ctx.fillStyle = "#6b7280";
-        ctx.fillText(yfmt(val), 8, y + 4);
-      }
-
-      durations.forEach((d, i) => {
-        const x = xOf(i);
-        const label = fsec(d);
-        ctx.fillStyle = "#4b5563";
-        ctx.font = "11px Segoe UI";
-        ctx.fillText(label, x - Math.max(8, label.length * 2), m.top + ph + 15);
-      });
-
-      for (const s of sers) {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        let started = false;
-        s.values.forEach((v, i) => {
-          if (!Number.isFinite(v)) return;
-          const x = xOf(i), y = yOf(v);
-          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-        s.values.forEach((v, i) => {
-          if (!Number.isFinite(v)) return;
-          const x = xOf(i), y = yOf(v);
-          ctx.fillStyle = s.color;
-          ctx.beginPath();
-          ctx.arc(x, y, 2.8, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
+    function makeLineDatasets(sers) {
+      return sers.map(s => ({
+        label: s.name,
+        data: s.values,
+        borderColor: s.color,
+        backgroundColor: s.color + "22",
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        fill: false
+      }));
     }
 
-    function renderLegend(id) {
-      const el = document.getElementById(id);
-      el.innerHTML = state.variants
-        .map((v) => `<span><span class="dot" style="background:${state.colors.get(v)}"></span>${v}</span>`)
-        .join(" ");
+    function createOrUpdateLine(canvasId, labels, sers, yLabel, tooltipSuffix) {
+      const ctx = document.getElementById(canvasId);
+      const datasets = makeLineDatasets(sers);
+      if (state.charts[canvasId]) {
+        const chart = state.charts[canvasId];
+        chart.data.labels = labels;
+        chart.data.datasets = datasets;
+        chart.options.scales.y.title = { display: true, text: yLabel, color: "#6b7280", font: { size: 11 } };
+        chart.options.plugins.tooltip.callbacks.label = ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(2)}${tooltipSuffix}`;
+        chart.update("none");
+        return;
+      }
+      const config = JSON.parse(JSON.stringify(chartDefaults));
+      config.scales.y.title = { display: true, text: yLabel, color: "#6b7280", font: { size: 11 } };
+      state.charts[canvasId] = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          ...config,
+          plugins: {
+            ...config.plugins,
+            tooltip: {
+              ...config.plugins.tooltip,
+              callbacks: {
+                label: ctx2 => `${ctx2.dataset.label}: ${ctx2.parsed.y?.toFixed(2)}${tooltipSuffix}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createOrUpdateBar(canvasId, labels, values, colors) {
+      const ctx = document.getElementById(canvasId);
+      if (state.charts[canvasId]) {
+        const chart = state.charts[canvasId];
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = values;
+        chart.data.datasets[0].backgroundColor = colors;
+        chart.update("none");
+        return;
+      }
+      state.charts[canvasId] = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Avg p50 (ms)",
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 4,
+            barThickness: 32,
+          }]
+        },
+        options: {
+          ...JSON.parse(JSON.stringify(chartDefaults)),
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: "#9ca3af", font: { family: "'Inter'", size: 12, weight: 500 } }
+            },
+            y: {
+              grid: { color: "rgba(255,255,255,0.04)" },
+              ticks: { color: "#6b7280", font: { family: "'JetBrains Mono'", size: 10 } },
+              title: { display: true, text: "Avg p50 (ms)", color: "#6b7280", font: { size: 11 } },
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              ...JSON.parse(JSON.stringify(chartDefaults.plugins.tooltip)),
+              callbacks: { label: ctx2 => `${ctx2.parsed.y?.toFixed(2)} ms` }
+            }
+          }
+        }
+      });
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       RENDER
+       ══════════════════════════════════════════════════════════════ */
+    function renderLegend() {
+      const el = document.getElementById("variantLegend");
+      el.innerHTML = state.variants.map(v =>
+        `<span class="legend-item"><span class="legend-dot" style="background:${colorFor(v)}"></span>${v}</span>`
+      ).join("");
+    }
+
+    function renderKPI(durations) {
+      // Best variant by geo speedup
+      const variantStats = state.variants.map(v => {
+        const speeds = [], p50s = [], rtfxs = [];
+        let wins = 0;
+        for (const d of durations) {
+          const slot = state.aggregate.get(d)?.get(v);
+          if (!slot) continue;
+          const p = median(slot.p50);
+          const r = median(slot.rtfx);
+          const s = median(slot.speed);
+          if (p != null) p50s.push(p);
+          if (r != null) rtfxs.push(r);
+          if (s != null) speeds.push(s);
+        }
+        for (const d of durations) {
+          let best = null, bestP = Infinity;
+          for (const vv of state.variants) {
+            const p = median(state.aggregate.get(d)?.get(vv)?.p50 || []);
+            if (p != null && p < bestP) { bestP = p; best = vv; }
+          }
+          if (best === v) wins++;
+        }
+        return { variant: v, geoSpeed: gmean(speeds), avgP50: avg(p50s), medRTFx: median(rtfxs), wins, points: p50s.length };
+      });
+
+      variantStats.sort((a, b) => (b.geoSpeed || 0) - (a.geoSpeed || 0));
+      const best = variantStats[0];
+
+      document.getElementById("kpiBestVariant").textContent = best?.variant || "—";
+      document.getElementById("kpiBestSub").textContent = best?.geoSpeed ? `${fx(best.geoSpeed)} geo speedup · ${best.wins} wins` : "";
+
+      // Best speedup (non-current)
+      const nonCurrent = variantStats.filter(v => v.variant !== "current");
+      const topSpeed = nonCurrent[0];
+      document.getElementById("kpiSpeedup").textContent = topSpeed?.geoSpeed ? fx(topSpeed.geoSpeed) : "—";
+      document.getElementById("kpiSpeedupSub").textContent = topSpeed ? `${topSpeed.variant} vs current` : "";
+
+      // Median RTFx across all
+      const allRtfx = [];
+      for (const s of variantStats) if (s.medRTFx != null) allRtfx.push(s.medRTFx);
+      document.getElementById("kpiRtfx").textContent = allRtfx.length ? fx(median(allRtfx)) : "—";
+      document.getElementById("kpiRtfxSub").textContent = `across ${state.variants.length} variants`;
+
+      // Data points
+      const totalPoints = variantStats.reduce((a, v) => a + v.points, 0);
+      document.getElementById("kpiPoints").textContent = totalPoints;
+      document.getElementById("kpiPointsSub").textContent = `${durations.length} durations × ${state.variants.length} variants`;
+
+      return variantStats;
+    }
+
+    function renderCharts(durations) {
+      const labels = durations.map(d => fsec(d) + "s");
+
+      createOrUpdateLine("chartP50", labels, seriesFor("p50", durations), "ms", " ms");
+      createOrUpdateLine("chartRTFx", labels, seriesFor("rtfx", durations), "×", "×");
+      createOrUpdateLine("chartSpeed", labels, seriesFor("speed", durations), "×", "×");
+      createOrUpdateLine("chartP90", labels, seriesFor("p90", durations), "ms", " ms");
+      createOrUpdateLine("chartStd", labels, seriesFor("std", durations), "ms σ", " ms");
+
+      // Bar chart — avg p50 per variant
+      const barLabels = [], barValues = [], barColors = [];
+      for (const v of state.variants) {
+        const p50s = [];
+        for (const d of durations) {
+          const p = median(state.aggregate.get(d)?.get(v)?.p50 || []);
+          if (p != null) p50s.push(p);
+        }
+        barLabels.push(v);
+        barValues.push(avg(p50s));
+        barColors.push(colorFor(v) + "cc");
+      }
+      createOrUpdateBar("chartBar", barLabels, barValues, barColors);
+    }
+
+    function renderHeatmap(durations) {
+      if (!durations.length || !state.variants.length) {
+        document.getElementById("heatmapTable").innerHTML = "";
+        return;
+      }
+      // Collect all p50 values for color scale
+      const allP50 = [];
+      for (const d of durations) {
+        for (const v of state.variants) {
+          const p = median(state.aggregate.get(d)?.get(v)?.p50 || []);
+          if (p != null) allP50.push(p);
+        }
+      }
+      const minP = Math.min(...allP50);
+      const maxP = Math.max(...allP50);
+      const range = maxP - minP || 1;
+
+      function cellColor(val) {
+        if (val == null) return "transparent";
+        const t = (val - minP) / range; // 0=best, 1=worst
+        // Green → Yellow → Red
+        const r = Math.round(40 + t * 200);
+        const g = Math.round(180 - t * 130);
+        const b = Math.round(100 - t * 60);
+        return `rgba(${r}, ${g}, ${b}, 0.25)`;
+      }
+
+      const header = `<thead><tr><th>Duration</th>${state.variants.map(v =>
+        `<th style="color: ${colorFor(v)}">${v}</th>`
+      ).join("")}</tr></thead>`;
+
+      const rows = durations.map(d => {
+        // find best for this duration
+        let bestP = Infinity, bestV = null;
+        for (const v of state.variants) {
+          const p = median(state.aggregate.get(d)?.get(v)?.p50 || []);
+          if (p != null && p < bestP) { bestP = p; bestV = v; }
+        }
+        const cells = state.variants.map(v => {
+          const p = median(state.aggregate.get(d)?.get(v)?.p50 || []);
+          const isBest = v === bestV;
+          return `<td class="heatmap-cell" style="background:${cellColor(p)}; ${isBest ? 'color: var(--green); font-weight: 700;' : ''}">${fms(p)}</td>`;
+        }).join("");
+        return `<tr><td>${fsec(d)}s</td>${cells}</tr>`;
+      }).join("");
+
+      document.getElementById("heatmapTable").innerHTML = header + `<tbody>${rows}</tbody>`;
     }
 
     function renderSummary(durations) {
@@ -346,93 +984,81 @@
       for (const v of state.variants) {
         const p50 = [], rtfx = [], speed = [];
         let wins = 0;
-
         for (const d of durations) {
           const slot = state.aggregate.get(d)?.get(v);
           if (!slot) continue;
-          const p = median(slot.p50);
-          const r = median(slot.rtfx);
-          const s = median(slot.speed);
+          const p = median(slot.p50); const r = median(slot.rtfx); const s = median(slot.speed);
           if (p != null) p50.push(p);
           if (r != null) rtfx.push(r);
           if (s != null) speed.push(s);
         }
-
         for (const d of durations) {
-          let best = null;
-          let bestP = Number.POSITIVE_INFINITY;
+          let best = null, bestP = Infinity;
           for (const vv of state.variants) {
             const p = median(state.aggregate.get(d)?.get(vv)?.p50 || []);
             if (p != null && p < bestP) { bestP = p; best = vv; }
           }
           if (best === v) wins++;
         }
-
-        rows.push({
-          variant: v,
-          avgP50: avg(p50),
-          medRTFx: median(rtfx),
-          geoSpeed: gmean(speed),
-          wins,
-          points: p50.length
-        });
+        rows.push({ variant: v, avgP50: avg(p50), medRTFx: median(rtfx), geoSpeed: gmean(speed), wins, points: p50.length });
       }
-
       rows.sort((a, b) => (b.geoSpeed || 0) - (a.geoSpeed || 0));
-      const best = rows[0]?.variant;
+
       table.innerHTML =
-        `<thead><tr><th>Variant</th><th>Avg p50 (ms)</th><th>Median RTFx</th><th>Geo Speedup</th><th>Duration Wins</th><th>Points</th></tr></thead>` +
+        `<thead><tr><th>#</th><th>Variant</th><th>Avg p50 (ms)</th><th>Median RTFx</th><th>Geo Speedup</th><th>Duration Wins</th><th>Points</th></tr></thead>` +
         `<tbody>` +
-        rows.map((r) =>
-          `<tr class="${r.variant === best ? "best" : ""}">` +
-          `<td>${r.variant}${r.variant === best ? " (best in range)" : ""}</td>` +
-          `<td>${fms(r.avgP50)}</td>` +
-          `<td>${fx(r.medRTFx)}</td>` +
-          `<td>${fx(r.geoSpeed)}</td>` +
-          `<td>${r.wins}</td>` +
-          `<td>${r.points}</td>` +
-          `</tr>`
-        ).join("") +
+        rows.map((r, i) => {
+          const rankCls = i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "";
+          return `<tr class="${rankCls}">` +
+            `<td>${i + 1}</td>` +
+            `<td style="color: ${colorFor(r.variant)}; font-weight: 600;">${r.variant}</td>` +
+            `<td>${fms(r.avgP50)}</td>` +
+            `<td>${fx(r.medRTFx)}</td>` +
+            `<td>${fx(r.geoSpeed)}</td>` +
+            `<td>${r.wins}</td>` +
+            `<td>${r.points}</td>` +
+            `</tr>`;
+        }).join("") +
         `</tbody>`;
     }
 
     function renderDetail(durations) {
       const table = document.getElementById("detail");
-      const header = state.variants.map((v) => `<th>${v} p50</th><th>${v} RTFx</th><th>${v} speed</th>`).join("");
-      const rows = durations.map((d) => {
-        let best = null;
-        let bestP = Number.POSITIVE_INFINITY;
+      const header = state.variants.map(v =>
+        `<th style="color:${colorFor(v)}">${v} p50</th><th>${v} RTFx</th><th>${v} ×</th>`
+      ).join("");
+      const rows = durations.map(d => {
+        let best = null, bestP = Infinity;
         for (const v of state.variants) {
           const p = median(state.aggregate.get(d)?.get(v)?.p50 || []);
           if (p != null && p < bestP) { bestP = p; best = v; }
         }
-        const cols = state.variants.map((v) => {
+        const cols = state.variants.map(v => {
           const slot = state.aggregate.get(d)?.get(v);
           const p = slot ? median(slot.p50) : null;
           const r = slot ? median(slot.rtfx) : null;
           const s = slot ? median(slot.speed) : null;
-          const cls = v === best ? "best" : "";
+          const cls = v === best ? "best-cell" : "";
           return `<td class="${cls}">${fms(p)}</td><td class="${cls}">${fx(r)}</td><td class="${cls}">${fx(s)}</td>`;
         }).join("");
-        return `<tr><td>${fsec(d)}</td>${cols}</tr>`;
-      });
-      table.innerHTML = `<thead><tr><th>Duration(s)</th>${header}</tr></thead><tbody>${rows.join("")}</tbody>`;
+        return `<tr><td>${fsec(d)}s</td>${cols}</tr>`;
+      }).join("");
+      table.innerHTML = `<thead><tr><th>Dur(s)</th>${header}</tr></thead><tbody>${rows}</tbody>`;
     }
 
     function renderMeta() {
       const totalSplits = state.reports.reduce((a, r) => a + (Array.isArray(r.bySplit) ? r.bySplit.length : 0), 0);
-      document.getElementById("meta").textContent =
-        `Reports: ${state.reports.length}, durations: ${state.durations.length}, variants: ${state.variants.join(", ")}, split records: ${totalSplits}.`;
+      const durs = filteredDurations();
+      document.getElementById("metaText").textContent =
+        `${state.reports.length} report(s) · ${durs.length}/${state.durations.length} durations · ${state.variants.join(", ")} · ${totalSplits} splits`;
     }
 
     function render() {
       const durations = filteredDurations();
-      renderLegend("legend1");
-      renderLegend("legend2");
-      renderLegend("legend3");
-      drawChart("c1", "p50 Latency vs Duration", "ms", durations, series("p50", durations), (v) => v.toFixed(1));
-      drawChart("c2", "RTFx vs Duration", "x", durations, series("rtfx", durations), (v) => v.toFixed(2));
-      drawChart("c3", "Speedup vs Current", "x", durations, series("speed", durations), (v) => v.toFixed(2));
+      renderLegend();
+      renderKPI(durations);
+      renderCharts(durations);
+      renderHeatmap(durations);
       renderSummary(durations);
       renderDetail(durations);
       renderMeta();
@@ -444,68 +1070,141 @@
       render();
     }
 
-    async function loadDefaultReports() {
-      try {
-        const manifestRes = await fetch(DEFAULT_MANIFEST_PATH);
-        if (manifestRes.ok) {
-          const manifest = await manifestRes.json();
-          const reports = [];
-          for (const entry of manifest.reports || []) {
-            try {
-              const res = await fetch(`../tmp/${entry.path}`);
-              if (res.ok) reports.push(await res.json());
-            } catch (_) {
-              // ignore broken entries
-            }
-          }
-          if (reports.length) {
-            setReports(reports);
-            return;
-          }
-        }
-      } catch (_) {
-        // fallback to latest
+    /* ══════════════════════════════════════════════════════════════
+       FILE BROWSER
+       ══════════════════════════════════════════════════════════════ */
+    function renderFileList() {
+      const list = document.getElementById("fileList");
+      if (!state.manifestEntries.length) {
+        list.innerHTML = '<li class="file-item" style="color:var(--text-muted);font-size:11px;cursor:default;">No files discovered</li>';
+        return;
       }
+      list.innerHTML = state.manifestEntries.map((entry, i) => {
+        const isActive = state.activeFileIndices.has(i);
+        const date = entry.generatedAt ? new Date(entry.generatedAt).toLocaleString() : "Unknown";
+        const splits = entry.splits ? entry.splits.join(", ") + "s" : "";
+        return `<li class="file-item ${isActive ? "active" : ""}" data-index="${i}">
+          <span class="file-name">${entry.path.replace(/^.*[\\/]/, "")}</span>
+          <span class="file-meta">${date}</span>
+          <span class="file-meta">Splits: ${splits}</span>
+        </li>`;
+      }).join("");
 
-      try {
-        const res = await fetch(DEFAULT_LATEST_PATH);
-        if (!res.ok) throw new Error(`${res.status}`);
-        const json = await res.json();
-        setReports([json]);
-      } catch (e) {
-        document.getElementById("meta").textContent =
-          `Could not load manifest/latest JSON. Run benchmark first or load files manually.`;
-      }
+      // Click handler
+      list.querySelectorAll(".file-item[data-index]").forEach(el => {
+        el.addEventListener("click", async (e) => {
+          const idx = Number(el.dataset.index);
+          if (e.ctrlKey || e.metaKey) {
+            // Multi-select toggle
+            if (state.activeFileIndices.has(idx)) state.activeFileIndices.delete(idx);
+            else state.activeFileIndices.add(idx);
+          } else {
+            // Single select
+            state.activeFileIndices.clear();
+            state.activeFileIndices.add(idx);
+          }
+          await loadSelectedFiles();
+        });
+      });
     }
 
-    async function loadFiles(files) {
+    async function loadSelectedFiles() {
       const reports = [];
-      for (const f of files) {
-        reports.push(JSON.parse(await f.text()));
+      for (const idx of state.activeFileIndices) {
+        const entry = state.manifestEntries[idx];
+        if (!entry) continue;
+        try {
+          const res = await fetch(`../tmp/${entry.path}`);
+          if (res.ok) reports.push(await res.json());
+        } catch (_) {}
       }
-      setReports(reports);
+      if (reports.length) {
+        setReports(reports);
+        renderFileList();
+      }
     }
 
-    document.getElementById("btnLoadLatest").addEventListener("click", loadDefaultReports);
+    async function loadManifest() {
+      try {
+        const res = await fetch(DEFAULT_MANIFEST_PATH);
+        if (!res.ok) throw new Error(res.status);
+        const manifest = await res.json();
+        state.manifestEntries = manifest.reports || [];
+        renderFileList();
+
+        // Auto-load all files
+        const reports = [];
+        for (let i = 0; i < state.manifestEntries.length; i++) {
+          state.activeFileIndices.add(i);
+          try {
+            const r = await fetch(`../tmp/${state.manifestEntries[i].path}`);
+            if (r.ok) reports.push(await r.json());
+          } catch (_) {}
+        }
+        if (reports.length) {
+          setReports(reports);
+          renderFileList();
+        }
+      } catch (e) {
+        // Try latest as fallback
+        try {
+          const res = await fetch("../tmp/meljs-variant-benchmark-latest.json");
+          if (!res.ok) throw new Error(res.status);
+          setReports([await res.json()]);
+        } catch (e2) {
+          document.getElementById("metaText").textContent = "Could not load manifest. Run benchmark or upload JSON files.";
+        }
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       EVENT LISTENERS
+       ══════════════════════════════════════════════════════════════ */
+    document.getElementById("btnLoadManifest").addEventListener("click", loadManifest);
+
     document.getElementById("btn714").addEventListener("click", () => {
       document.getElementById("minSec").value = "7";
       document.getElementById("maxSec").value = "14";
       render();
     });
-    document.getElementById("btnReset").addEventListener("click", () => {
+    document.getElementById("btnAll").addEventListener("click", () => {
       document.getElementById("minSec").value = "0";
       document.getElementById("maxSec").value = "200";
       render();
     });
     document.getElementById("minSec").addEventListener("input", render);
     document.getElementById("maxSec").addEventListener("input", render);
+
     document.getElementById("files").addEventListener("change", async (ev) => {
       const files = [...ev.target.files];
       if (!files.length) return;
-      await loadFiles(files);
+      const reports = [];
+      for (const f of files) {
+        try { reports.push(JSON.parse(await f.text())); } catch (_) {}
+      }
+      if (reports.length) setReports(reports);
     });
 
-    loadDefaultReports();
+    document.getElementById("toggleDetail").addEventListener("click", () => {
+      const wrap = document.getElementById("detailWrap");
+      const btn = document.getElementById("toggleDetail");
+      if (wrap.style.display === "none") {
+        wrap.style.display = "block";
+        btn.textContent = "▲ Hide";
+      } else {
+        wrap.style.display = "none";
+        btn.textContent = "▼ Show";
+      }
+    });
+
+    // Set canvas heights
+    document.querySelectorAll(".chart-panel canvas").forEach(c => {
+      c.parentElement.style.height = "300px";
+      c.style.height = "260px";
+    });
+
+    // Auto-load on start
+    loadManifest();
   </script>
 </body>
 </html>

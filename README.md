@@ -6,6 +6,8 @@ Zero dependencies. Runs in browsers (including Web Workers, WebGPU pipelines) an
 
 > Built for developers working with speech recognition, audio ML, and ONNX Runtime Web who need stateful, cacheable audio feature extraction, something ONNX preprocessor models can't provide.
 
+📊 **[Live Benchmark Dashboard](https://ysdede.github.io/meljs/)** · ![Benchmark](https://github.com/ysdede/meljs/actions/workflows/benchmark.yml/badge.svg)
+
 ## Why meljs?
 
 ONNX Runtime Web provides neural network inference but **not audio preprocessing**. Most ASR pipelines ship an ONNX preprocessor model (e.g. `nemo128.onnx`) to compute mel spectrograms, but ONNX models are **stateless black boxes**, every call recomputes everything from scratch. This creates two problems:
