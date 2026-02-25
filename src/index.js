@@ -25,3 +25,14 @@ export { MEL_CONSTANTS } from './mel.js';
 
 // Legacy aliases (parakeet.js compat)
 export { JsPreprocessor, IncrementalMelProcessor } from './mel.js';
+
+// Parakeet-specific variant processors (current + optimization candidates)
+export {
+  PARAKEET_MEL_VARIANTS,
+  ParakeetCurrentMelProcessor,
+  ParakeetMelProcessorPr74,
+  ParakeetMelProcessorPr75,
+  ParakeetMelProcessorPr84,
+  ParakeetIncrementalMelProcessor,
+  createParakeetMelProcessor,
+} from './parakeet-variants.js';

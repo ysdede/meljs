@@ -18,7 +18,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench:variants": "node tests/benchmark_variants.mjs",
+    "bench:variants:streaming": "node tests/benchmark_variants.mjs --splits 7,8,9,10,11,12,13,14"
   },
   "keywords": [
     "mel",

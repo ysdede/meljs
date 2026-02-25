@@ -23,6 +23,23 @@ meljs solves both:
 - **Precision**, Float64 STFT matching ONNX's double-precision pipeline
 - **Configurable**, works with any mel bin count, FFT size, hop length, sample rate
 
+## ASR Preprocessing, What Is Included?
+
+You are thinking in the right direction. In modern ASR pipelines, "preprocessing" usually means:
+
+1. Audio decode / resample / mono conversion
+2. Optional pre-emphasis
+3. STFT (windowing + FFT)
+4. Power spectrum
+5. Mel filterbank projection
+6. Log compression
+7. Feature normalization
+8. Optional extras depending on model: VAD, chunking, CMVN variants, masking, etc.
+
+So yes, mel computation is the core, but it usually sits inside a broader preprocessing path.
+Keeping mel algorithms in a separate package (`meljs`) is a good architecture, it lets you evolve
+performance-critical feature extraction independently from decoder/model code.
+
 ## Install
 
 ```bash
@@ -66,6 +83,39 @@ console.log(r2.cachedFrames, r2.newFrames);
 // Reset for new recording
 mel.reset();
 ```
+
+### Select Parakeet Algorithm Variants
+
+`meljs` now includes the current parakeet mel implementation and all RealFFT candidates as reusable classes/modules, so users can pick an algorithm explicitly:
+
+```js
+import {
+  createParakeetMelProcessor,
+  ParakeetIncrementalMelProcessor,
+  PARAKEET_MEL_VARIANTS,
+} from "meljs";
+
+console.log(PARAKEET_MEL_VARIANTS);
+// ["current", "pr74", "pr75", "pr84"]
+
+const mel = createParakeetMelProcessor({
+  variant: "pr75", // "current" | "pr74" | "pr75" | "pr84"
+  nMels: 128,
+});
+
+const { features, length } = mel.process(audioFloat32Array);
+
+const inc = new ParakeetIncrementalMelProcessor({
+  variant: "pr75",
+  nMels: 128,
+  boundaryFrames: 3,
+});
+const r1 = inc.process(audioFloat32Array, 0);
+const r2 = inc.process(audioFloat32Array, Math.floor(audioFloat32Array.length * 0.7));
+```
+
+If you need custom STFT/mel parameters (`nFft`, `hopLength`, etc.), use `MelSpectrogram`.
+Parakeet variants intentionally keep fixed NeMo-compatible defaults for apples-to-apples comparison.
 
 ### Low-Level Building Blocks
 
@@ -170,6 +220,24 @@ Extends `MelSpectrogram` with frame-level caching for streaming.
 **Methods:**
 - `process(audio, prefixSamples)`, Returns `{features, length, cached, cachedFrames, newFrames}`
 - `reset()` / `clear()`, Clear the frame cache
+
+### Parakeet Variant API
+
+For maintaining and benchmarking multiple parakeet-compatible algorithms side-by-side:
+
+- `PARAKEET_MEL_VARIANTS`, `["current", "pr74", "pr75", "pr84"]`
+- `createParakeetMelProcessor({ variant, nMels })`
+- `ParakeetIncrementalMelProcessor({ variant, nMels, boundaryFrames })`
+- Variant classes:
+  - `ParakeetCurrentMelProcessor`
+  - `ParakeetMelProcessorPr74`
+  - `ParakeetMelProcessorPr75`
+  - `ParakeetMelProcessorPr84`
+
+All variant processors expose the same methods:
+- `process(audio)`
+- `computeRawMel(audio, startFrame = 0, outBuffer = null)`
+- `normalize(rawMel, nFrames, featuresLen, outBuffer = null)`
 
 ### Standalone Functions
 
@@ -279,6 +347,34 @@ The mel spectrogram pipeline exactly matches NeMo's `FilterbankFeatures`:
 7. **Normalize**, Per-feature mean/variance, Bessel-corrected (N-1 denominator)
 
 NeMo's dither, narrowband augmentation, frame splicing, and pad-to-multiple are all disabled at inference and correctly omitted.
+
+## Variant Benchmarking and HTML Charts
+
+Run variant benchmarks (current + all candidates):
+
+```bash
+npm run bench:variants
+```
+
+Streaming-focused window (7-14s):
+
+```bash
+npm run bench:variants:streaming
+```
+
+These commands write JSON reports into `tmp/`:
+- Timestamped report: `tmp/meljs-variant-benchmark-<timestamp>.json`
+- Stable latest copy: `tmp/meljs-variant-benchmark-latest.json`
+- Manifest of all generated reports: `tmp/meljs-variant-benchmark-manifest.json`
+
+Open the chart page:
+- `tests/benchmark_variants_comparison.html`
+
+In the page you can:
+- Auto-load all tracked reports from the manifest with **Load Tracked JSONs**
+- Filter duration range (including **Set 7-14s**)
+- Compare p50 latency, RTFx, and speedup-vs-current
+- Load multiple JSON files for side-by-side run comparisons
 
 ## Testing
 
